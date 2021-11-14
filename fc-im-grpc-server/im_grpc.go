@@ -2,6 +2,7 @@ package fc_im_grpc_server
 
 import (
 	gatewaypb "freechat/im/generated/grpc/im/gateway"
+	"freechat/im/services/service_message"
 	"github.com/liyanze888/funny-core/fn_factory"
 	"github.com/liyanze888/funny-core/fn_grpc"
 	"sync"
@@ -14,19 +15,26 @@ func init() {
 
 type fcImGrpcServer struct {
 	gatewaypb.UnsafeImServiceServer
-	holders map[int]map[int64]ConnectHolder
-	Worker  MessageWorker `autowire:""`
+	holders   map[int]map[int64]*service_message.ConnectHolder
+	anonymous map[string]map[int64]*service_message.ConnectHolder
+	Worker    service_message.MessageDispatcher `autowire:""`
 }
 
 // Connect 连接
-func (im *fcImGrpcServer) Connect(server gatewaypb.ImService_ConnectServer) error {
+func (im fcImGrpcServer) Connect(server gatewaypb.ImService_ConnectServer) error {
 	wg := sync.WaitGroup{}
-	holder := NewConnectHolder(&wg, server, im.Worker)
+	holder, err := service_message.NewConnectHolder(&wg, server, im.Worker)
+	if err != nil {
+		return err
+	}
 	holder.Start()
 	wg.Wait()
 	return nil
 }
 
 func NewFcImGrpcServer() gatewaypb.ImServiceServer {
-	return &fcImGrpcServer{}
+	return &fcImGrpcServer{
+		holders:   make(map[int]map[int64]*service_message.ConnectHolder),
+		anonymous: make(map[string]map[int64]*service_message.ConnectHolder),
+	}
 }

@@ -34,9 +34,9 @@ echo $m
 
 protoc -I im-proto $FILES --go_out=generated/grpc --go_opt=$m --go-grpc_out=generated/grpc --go-grpc_opt=$m
 
-#mkdir -p generated/dsl
-#MYSQL="${MYSQL:-admin:Admin123@tcp(dev.cluster-cvqute6nrbz7.ap-southeast-1.rds.amazonaws.com:3306)/alpha}"
-#sqlingo-gen-mysql $MYSQL >generated/dsl/dsl.go
+mkdir -p generated/dsl
+MYSQL="${MYSQL:-root:liyanze@3.1415926@tcp(152.136.28.100:3306)/freechat-im}"
+sqlingo-gen-mysql $MYSQL > generated/dsl/dsl.go
 
 #go-localize -input i18n -output generated/localizations
 

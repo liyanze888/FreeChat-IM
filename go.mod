@@ -3,8 +3,10 @@ module freechat/im
 go 1.17
 
 require (
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/liyanze888/funny-core v0.0.3
+	github.com/liyanze888/funny-core v0.0.4
+	github.com/lqs/sqlingo v0.10.11
 	google.golang.org/grpc v1.42.0
 	google.golang.org/protobuf v1.25.0
 )

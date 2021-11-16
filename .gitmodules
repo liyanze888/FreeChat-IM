@@ -1,0 +1,3 @@
+[submodule "im-proto"]
+	path = im-proto
+	url = https://github.com/liyanze888/im-proto.git

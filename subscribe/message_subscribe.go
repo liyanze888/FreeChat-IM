@@ -53,6 +53,7 @@ func (m *MessageSubscribeConsumer) StartUpListen() {
 }
 
 func (m *MessageSubscribeConsumer) Publish(message *gatewaypb.MessageWrapper) {
+	//todo 加一个chain 批次处理消息
 	marshal, err := proto.Marshal(message)
 	if err != nil {
 		fn_log.Printf("Publish message -> marshal error  message Content = %v  error = %v ", message, err)

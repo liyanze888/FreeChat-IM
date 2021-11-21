@@ -52,6 +52,7 @@ func (m *messageDispatcher) Dispatch(message *gatewaypb.MessageWrapper, info *Co
 			return nil, err
 		}
 		fn_log.Printf("%v", hodler.Message)
+		//todo 前置处理消息器
 		go func() {
 			err = m.MessageRepo.SaveMessage(int64(id), info.UserContext.UserId, chatId, content)
 			if err != nil {

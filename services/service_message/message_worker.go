@@ -25,7 +25,7 @@ type MessageTypeWorker interface {
 }
 
 type MessageDispatcher interface {
-	Dispatch(message *gatewaypb.MessageWrapper, info *ConnectHolder) error
+	Dispatch(message *gatewaypb.MessageWrapper, info *ConnectHolder) (*gatewaypb.MessageWrapper, error)
 }
 
 type messageDispatcher struct {
@@ -34,29 +34,32 @@ type messageDispatcher struct {
 	IdUtils     fn_utils.IdUtils             `autowire:""`
 }
 
-func (m *messageDispatcher) Dispatch(message *gatewaypb.MessageWrapper, info *ConnectHolder) error {
+func (m *messageDispatcher) Dispatch(message *gatewaypb.MessageWrapper, info *ConnectHolder) (*gatewaypb.MessageWrapper, error) {
 	fn_log.Printf("work msg = %v  info = %v", message, *info)
 	for _, msg := range message.GetMessage().GetItems() {
+		chatId := msg.GetChatId()
 		hodler, err := m.Workers[int(msg.MsgType)].work(msg, info)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		id, err := m.IdUtils.NextID()
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		content, err := proto.Marshal(hodler.Message)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		fn_log.Printf("%v", hodler.Message)
-		err = m.MessageRepo.SaveMessage(int64(id), info.UserContext.UserId, msg.GetChatId(), content)
-		if err != nil {
-			fn_log.Printf(err.Error())
-		}
+		go func() {
+			err = m.MessageRepo.SaveMessage(int64(id), info.UserContext.UserId, chatId, content)
+			if err != nil {
+				fn_log.Printf(err.Error())
+			}
+		}()
 	}
-	return nil
+	return message, nil
 }
 
 func NewMessageWorker() MessageDispatcher {

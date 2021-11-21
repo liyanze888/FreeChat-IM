@@ -1,8 +1,8 @@
 package grpc_common
 
 import (
-	"context"
 	"errors"
+	gatewaypb "freechat/im/generated/grpc/im/gateway"
 	"google.golang.org/grpc/metadata"
 	"reflect"
 	"strconv"
@@ -17,15 +17,18 @@ type GrpcContextInfo struct {
 	UserId    int64  `desc:"userId"`      //用户类型
 	BizType   int64  `desc:"bizType"`     //业务类型
 	UniqueKey string `desc:"instance-id"` //唯一标识 多端登录
+	Server    gatewaypb.ImService_ConnectServer
 }
 
-func Tranfer2ContextInfo(ctx context.Context) (*GrpcContextInfo, error) {
-	md, b := metadata.FromIncomingContext(ctx)
+func Tranfer2ContextInfo(server gatewaypb.ImService_ConnectServer) (*GrpcContextInfo, error) {
+	md, b := metadata.FromIncomingContext(server.Context())
 
 	if !b {
 		return nil, errors.New("Parse Headers Failed")
 	}
-	context := &GrpcContextInfo{}
+	context := &GrpcContextInfo{
+		Server: server,
+	}
 	t := reflect.TypeOf(context)
 	v := reflect.ValueOf(context)
 

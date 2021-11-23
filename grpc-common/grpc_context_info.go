@@ -17,7 +17,7 @@ type GrpcContextInfo struct {
 	UserId    int64  `desc:"userId"`      //用户类型
 	BizType   int64  `desc:"bizType"`     //业务类型
 	UniqueKey string `desc:"instance-id"` //唯一标识 多端登录
-	Server    gatewaypb.ImService_ConnectServer
+
 }
 
 func Tranfer2ContextInfo(server gatewaypb.ImService_ConnectServer) (*GrpcContextInfo, error) {
@@ -26,9 +26,7 @@ func Tranfer2ContextInfo(server gatewaypb.ImService_ConnectServer) (*GrpcContext
 	if !b {
 		return nil, errors.New("Parse Headers Failed")
 	}
-	context := &GrpcContextInfo{
-		Server: server,
-	}
+	context := &GrpcContextInfo{}
 	t := reflect.TypeOf(context)
 	v := reflect.ValueOf(context)
 

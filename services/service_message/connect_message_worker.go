@@ -4,6 +4,7 @@ import (
 	gatewaypb "freechat/im/generated/grpc/im/gateway"
 	messagepb "freechat/im/generated/grpc/im/gateway/message"
 	messageType "freechat/im/generated/grpc/im/message"
+	"freechat/im/subscribe"
 	"github.com/liyanze888/funny-core/fn_factory"
 	"github.com/liyanze888/funny-core/fn_log"
 )
@@ -16,7 +17,7 @@ type connectMessageWorker struct {
 	workerType int
 }
 
-func (c *connectMessageWorker) work(msg *gatewaypb.MessageCell, info *ConnectHolder) (*MessageHolder, error) {
+func (c *connectMessageWorker) work(msg *gatewaypb.MessageCell, user *subscribe.UserContext) (*MessageHolder, error) {
 	fn_log.Printf("%v", msg)
 
 	holder := &MessageHolder{

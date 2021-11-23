@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	_ "freechat/im/fc-im-grpc-server"
+	_ "freechat/im/services/service_message"
 	_ "freechat/im/subscribe"
 	_ "github.com/go-sql-driver/mysql"
 	recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"

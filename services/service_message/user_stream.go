@@ -19,12 +19,12 @@ func (c *UserStream) Start() {
 	defer c.wg.Done()
 	for {
 		message, err := c.UserContext.Server.Recv()
-		start := time.Now()
 		if err != nil {
 			fn_log.Printf("%v", err)
 			c.UserContext.Unsubscribe()
 			break
 		}
+		start := time.Now()
 		c.chatRoomControl.SendMsg(message, c.UserContext)
 		fn_log.Printf("cost =  %v", time.Since(start))
 	}

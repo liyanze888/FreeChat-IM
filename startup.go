@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// 回头修改成默认中的数据
 func init() {
 	db, err := sqlingo.Open("mysql", "root:liyanze@3.1415926@tcp(152.136.28.100:3306)/freechat-im")
 	if err != nil {

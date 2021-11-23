@@ -46,24 +46,18 @@ func (m *UserContext) startListenSendMessage() {
 				fn_log.Printf("%s reciveMessage error %v", m.subChannel, err)
 				continue
 			}
-			var message gatewaypb.MessageWrapper
+			var message gatewaypb.MessagePayload
 			err = proto.Unmarshal(str_utils.Str2Bytes(receive.Payload), &message)
 			if err != nil {
 				fn_log.Printf("%s proto.Unmarshal res = %v error %v", m.subChannel, receive.Payload, err)
 				continue
 			}
-			m.Server.Send(&message)
+			// 拼装成完整的   是否需要combine data
+			m.Server.Send(
+				&gatewaypb.MessageWrapper{
+					Payloads: []*gatewaypb.MessagePayload{&message}})
 		}
 	}()
-}
-
-func (m *UserContext) Publish(message *gatewaypb.MessageWrapper) {
-	//todo 加一个chain 批次处理消息
-	marshal, err := proto.Marshal(message)
-	if err != nil {
-		fn_log.Printf("Publish message -> marshal error  message Content = %v  error = %v ", message, err)
-	}
-	m.Rdb.Publish(context.Background(), m.subChannel, marshal)
 }
 
 func (m *UserContext) Unsubscribe() {

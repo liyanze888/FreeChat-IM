@@ -9,6 +9,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/liyanze888/funny-core v0.0.4
 	github.com/lqs/sqlingo v0.10.11
+	github.com/streadway/amqp v1.0.0
 	golang.org/x/text v0.3.6
 	google.golang.org/api v0.60.0
 	google.golang.org/grpc v1.42.0

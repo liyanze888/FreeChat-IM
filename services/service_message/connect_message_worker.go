@@ -17,12 +17,11 @@ type connectMessageWorker struct {
 	workerType int
 }
 
-func (c *connectMessageWorker) work(msg *gatewaypb.MessageCell, user *subscribe.UserContext) (*MessageHolder, error) {
+func (c *connectMessageWorker) work(msg *gatewaypb.MessageCell, user *subscribe.UserContext) (*WorkMessagePaylaod, error) {
 	fn_log.Printf("%v", msg)
 
-	holder := &MessageHolder{
+	holder := &WorkMessagePaylaod{
 		Message: &gatewaypb.MessageCell{
-			ChatId: msg.GetChatId(),
 			MessageComment: &gatewaypb.MessageCell_ConnectMessage{
 				ConnectMessage: &messagepb.ConnectMessage{
 					ConnectMessageType: messagepb.ConnectMessageType_ConnectMessageTypeBeatHeart,
@@ -31,8 +30,6 @@ func (c *connectMessageWorker) work(msg *gatewaypb.MessageCell, user *subscribe.
 			},
 			Show: true,
 		},
-		Push: false,
-		Save: true,
 	}
 	return holder, nil
 }

@@ -2,8 +2,7 @@ package service_message
 
 import (
 	gatewaypb "freechat/im/generated/grpc/im/gateway"
-	"freechat/im/repository"
-	"freechat/im/subscribe"
+	grpc_common "freechat/im/grpc-common"
 	"github.com/liyanze888/funny-core/fn_factory"
 	"github.com/liyanze888/funny-core/fn_log"
 )
@@ -24,19 +23,18 @@ type WorkMessagePaylaod struct {
 }
 
 type MessageTypeWorker interface {
-	work(message *gatewaypb.MessageCell, user *subscribe.UserContext) (*WorkMessagePaylaod, error)
+	work(message *gatewaypb.MessageCell, user *grpc_common.GrpcContextInfo) (*WorkMessagePaylaod, error)
 }
 
 type MessageDispatcher interface {
-	Dispatch(message *gatewaypb.MessagePayload, user *subscribe.UserContext) (*WorkMessageHolder, error)
+	Dispatch(message *gatewaypb.MessagePayload, user *grpc_common.GrpcContextInfo) (*WorkMessageHolder, error)
 }
 
 type messageDispatcher struct {
-	Workers     map[int]MessageTypeWorker    `autowire:"" beanFiledName:"workerType"`
-	MessageRepo repository.MessageRepository `autowire:""`
+	Workers map[int]MessageTypeWorker `autowire:"" beanFiledName:"workerType"`
 }
 
-func (m *messageDispatcher) Dispatch(payload *gatewaypb.MessagePayload, user *subscribe.UserContext) (*WorkMessageHolder, error) {
+func (m *messageDispatcher) Dispatch(payload *gatewaypb.MessagePayload, user *grpc_common.GrpcContextInfo) (*WorkMessageHolder, error) {
 	fn_log.Printf("work payload = %v  info = %v", payload, *user)
 	var payloads []*WorkMessagePaylaod
 	for _, msg := range payload.GetItems() {

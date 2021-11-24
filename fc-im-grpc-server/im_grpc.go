@@ -3,7 +3,6 @@ package fc_im_grpc_server
 import (
 	gatewaypb "freechat/im/generated/grpc/im/gateway"
 	"freechat/im/services/service_message"
-	"freechat/im/subscribe"
 	"github.com/liyanze888/funny-core/fn_factory"
 	"github.com/liyanze888/funny-core/fn_grpc"
 )
@@ -15,7 +14,6 @@ func init() {
 
 type fcImGrpcServer struct {
 	gatewaypb.UnsafeImServiceServer
-	MsFactory *subscribe.UserContextFactory      `autowire:""`
 	UhFactory *service_message.UserStreamFactory `autowire:""`
 }
 

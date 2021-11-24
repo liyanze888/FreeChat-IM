@@ -1,3 +1,4 @@
+--读扩散
 CREATE TABLE message (
      id BIGINT NOT NULL ,
      user_id BIGINT NOT NULL COMMENT 'sender',
@@ -9,7 +10,8 @@ CREATE TABLE message (
      INDEX m_chat_id_user_id (`chat_id` , `user_id`)
 )
 
--- 分库 分表        1000w 人一个库        10万人一张表    100张表   库 userId % 1000w 选择库   userId % 10w 选择表
+-- 写扩散 基于自己id 查询
+-- 分库 分表   1000w 人一个库 10万人一张表    100张表   库 userId % 1000w 选择库   userId % 10w 选择表 这么做可以横向扩展
 -- CREATE TABLE message_?(
 --   id BIGINT NOT NULL ,
 --   user_id BIGINT NOT NULL COMMENT 'sender',

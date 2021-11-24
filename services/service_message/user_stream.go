@@ -22,6 +22,11 @@ const (
 	UserSubscibeChannelTemplate = "message:subscribe:%d"
 )
 
+const (
+	DefaultCombineMsgCount  = 5    //5调数据
+	DefaultSendoutTimeAfter = 1500 //1.5s
+)
+
 func (c *UserStream) Start(user *grpc_common.GrpcContextInfo) {
 	c.wg.Add(1)
 	defer c.wg.Done()
@@ -43,10 +48,52 @@ func (c *UserStream) send(receive *redis.Message) error {
 	if err != nil {
 		fn_log.Printf("%s proto.Unmarshal res = %v error %v", receive.Channel, receive.Payload, err)
 	}
+	// 是否需要拼装数据
 	// 拼装成完整的   是否需要combine data
-	return c.server.Send(
-		&gatewaypb.MessageWrapper{
-			Payloads: []*gatewaypb.MessagePayload{&message}})
+	c.combineMessage = append(c.combineMessage, &message)
+	if len(c.combineMessage) >= c.combineMsgLimit {
+		c.sendOut()
+	}
+	return nil
+}
+
+func (c *UserStream) asyncTimeoutSendMsg() {
+	go func() {
+		chn := make(chan struct{})
+		defer close(chn)
+		for c.timeLoop {
+			c.afterFewSecond(chn)
+			select {
+			case <-chn:
+				c.sendOut()
+			}
+		}
+		fn_log.Printf("asyncTimeoutSendMsg finish")
+	}()
+}
+
+func (c *UserStream) finish() error {
+	c.timeLoop = false
+	return nil
+}
+
+func (c *UserStream) afterFewSecond(chn chan struct{}) {
+	time.AfterFunc(time.Duration(c.timeAfterSend)*time.Millisecond, func() {
+		chn <- struct{}{}
+	})
+}
+
+func (c *UserStream) sendOut() {
+	c.combineMutex.Lock()
+	defer c.combineMutex.Unlock()
+	if len(c.combineMessage) > 0 {
+		_ = c.server.Send(
+			&gatewaypb.MessageWrapper{
+				Payloads: c.combineMessage,
+				Count:    int64(len(c.combineMessage)),
+			})
+		c.combineMessage = c.combineMessage[0:0]
+	}
 }
 
 func (u *UserStreamFactory) StartNewUserStream(server gatewaypb.ImService_ConnectServer) error {
@@ -58,7 +105,7 @@ func (u *UserStreamFactory) StartNewUserStream(server gatewaypb.ImService_Connec
 	}
 	fn_log.Printf("%v", *user)
 	stream := u.startNewUserStream(&wg, server)
-	if err = u.Pubsub.SubcribeChannel(server.Context(), fmt.Sprintf(UserSubscibeChannelTemplate, user.UserId), stream.send); err != nil {
+	if err = u.Pubsub.SubcribeChannel(server.Context(), fmt.Sprintf(UserSubscibeChannelTemplate, user.UserId), stream.send, stream.finish); err != nil {
 		return err
 	}
 	stream.Start(user)
@@ -67,12 +114,16 @@ func (u *UserStreamFactory) StartNewUserStream(server gatewaypb.ImService_Connec
 }
 
 func (u *UserStreamFactory) startNewUserStream(wg *sync.WaitGroup, server gatewaypb.ImService_ConnectServer) *UserStream {
-	userHodler := &UserStream{
+	userStream := &UserStream{
 		wg:              wg,
 		chatRoomControl: u.ChatRoomControl,
 		server:          server,
+		timeLoop:        true,
+		combineMsgLimit: DefaultCombineMsgCount,  //可配置
+		timeAfterSend:   DefaultSendoutTimeAfter, //可配置
 	}
-	return userHodler
+	userStream.asyncTimeoutSendMsg()
+	return userStream
 }
 
 // UserStream 接收消息 与发消息
@@ -80,6 +131,11 @@ type UserStream struct {
 	wg              *sync.WaitGroup
 	server          gatewaypb.ImService_ConnectServer
 	chatRoomControl ChatRoomService
+	combineMutex    sync.Mutex
+	combineMessage  []*gatewaypb.MessagePayload
+	timeLoop        bool
+	combineMsgLimit int   //限制长度
+	timeAfterSend   int64 //多长时间后自动发送 unit ms
 }
 
 type UserStreamFactory struct {

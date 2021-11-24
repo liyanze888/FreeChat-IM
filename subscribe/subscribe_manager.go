@@ -14,6 +14,7 @@ func init() {
 }
 
 type OnMessage func(*redis.Message) error
+type OnFinish func() error
 
 type PubSubManager struct {
 	Rdb         redis.UniversalClient `autowire:""`
@@ -39,7 +40,7 @@ func (p *PubSubManager) Publish(channel string, content []byte) (int64, error) {
 	return publish.Val(), nil
 }
 
-func (p *PubSubManager) SubcribeChannel(ctx context.Context, channel string, f OnMessage) error {
+func (p *PubSubManager) SubcribeChannel(ctx context.Context, channel string, f OnMessage, c OnFinish) error {
 	p.psMutex.Lock()
 	defer p.psMutex.Unlock()
 	if _, ok := p.subChannels[channel]; !ok {
@@ -51,10 +52,10 @@ func (p *PubSubManager) SubcribeChannel(ctx context.Context, channel string, f O
 		}
 	}
 	fn_log.Printf("%v", len(p.subChannels))
-	return p.addCh(ctx, channel, f)
+	return p.addCh(ctx, channel, f, c)
 }
 
-func (p *PubSubManager) addCh(ctx context.Context, channel string, f OnMessage) error {
+func (p *PubSubManager) addCh(ctx context.Context, channel string, f OnMessage, c OnFinish) error {
 	manager := p.subChannels[channel]
 	manager.csMutex.Lock()
 	defer manager.csMutex.Unlock()
@@ -73,6 +74,7 @@ func (p *PubSubManager) addCh(ctx context.Context, channel string, f OnMessage) 
 			case <-ctx.Done():
 				fn_log.Printf("%v")
 				loop = false
+				c()
 				p.rmCh(channel, chId)
 			}
 		}

@@ -13,7 +13,6 @@ import (
 	"github.com/liyanze888/funny-core/fn_log"
 	"github.com/liyanze888/funny-core/fn_utils"
 	"google.golang.org/protobuf/proto"
-	"log"
 	"time"
 )
 
@@ -51,8 +50,9 @@ func (c *chatRoomService) SendMsg(msg *gatewaypb.MessageWrapper, userInfo *grpc_
 	for _, payload := range payloads {
 		id, err := c.IdUtils.NextID()
 		payload.Sender = userInfo.UserId
+		payload.CreateTime = time.Now().UnixMilli()
 		if err != nil {
-			log.Printf("%v", err)
+			fn_log.Printf("%v", err)
 			continue
 		}
 
@@ -82,7 +82,7 @@ func (c *chatRoomService) SendMsg(msg *gatewaypb.MessageWrapper, userInfo *grpc_
 	}
 }
 
-func (c *chatRoomService) asycPubMsg() {
+func (c *chatRoomService) asyncPubMsg() {
 	go func() {
 		for holder := range c.pubChn {
 			start := time.Now()
@@ -115,6 +115,8 @@ func (c *chatRoomService) asyncSaveMsg() {
 				fn_log.Printf("Publish message -> marshal error  message Content = %v  error = %v ", content, err)
 				continue
 			}
+			// 主要是 读扩散 还是写扩散  保存的方式不一样
+			//读扩散基于chat     谢扩散基于个人
 			if holder.holder.Save {
 				if err := c.MqClient.PublishExchange(fc_constant.ImDbMessageSaveExchange, fc_constant.ImDbMessageSaveKey, content); err != nil {
 					fn_log.Printf("%v", err)
@@ -139,7 +141,7 @@ func (c *chatRoomService) publish(content []byte, userId int64) int64 {
 
 func (c *chatRoomService) PostInitilization() {
 	c.asyncSaveMsg()
-	c.asycPubMsg()
+	c.asyncPubMsg()
 	go func() {
 		queue, err := c.MqClient.ListenExchangeWithQueue(fc_constant.ImDbMessageSaveExchange, fc_constant.ImDbMessageSaveQueue, fc_constant.ImDbMessageSaveKey)
 		if err != nil {
@@ -147,7 +149,6 @@ func (c *chatRoomService) PostInitilization() {
 		}
 
 		for msg := range queue {
-			fn_log.Printf("%v", msg)
 			err = c.MqClient.Ack(msg.DeliveryTag)
 			if err != nil {
 				fn_log.Printf("ack error %v", err)
@@ -156,6 +157,7 @@ func (c *chatRoomService) PostInitilization() {
 			err = proto.Unmarshal(msg.Body, &message)
 			if err != nil {
 				fn_log.Printf("message Unmarshal error %v", err)
+				continue
 			}
 			err = c.MessageRepo.SaveMessage(message.ServerId, message.Sender, message.ChatId, msg.Body)
 			if err != nil {
